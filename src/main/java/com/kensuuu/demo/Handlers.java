@@ -3,7 +3,6 @@ package com.kensuuu.demo;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -23,18 +22,18 @@ public class Handlers {
                 .bodyToMono(clazz)
                 .flatMap(function)
                 .switchIfEmpty(ServerResponse.notFound().build())
-                .onErrorResume(WebExchangeBindException.class, e -> ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON).bodyValue(e.getBody()))
+                .onErrorResume(WebExchangeBindException.class, e -> ServerResponse.badRequest().build())
                 .onErrorResume(e -> ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build())
-                .flatMap(response -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(response));
+                .flatMap(response -> ServerResponse.ok().bodyValue(response));
     }
 
     public static <T, R extends Mono<ServerResponse>> Mono<ServerResponse> handleQueryParam(ServerRequest serverRequest, Class<T> clazz, Function<T, R> function) {
         return mapQueryParamToInstance(serverRequest, clazz)
                 .flatMap(function)
                 .switchIfEmpty(ServerResponse.notFound().build())
-                .onErrorResume(WebExchangeBindException.class, e -> ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON).bodyValue(e.getBody()))
+                .onErrorResume(WebExchangeBindException.class, e -> ServerResponse.badRequest().build())
                 .onErrorResume(e -> ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build())
-                .flatMap(response -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(response));
+                .flatMap(response -> ServerResponse.ok().build());
     }
 
     private static <T> Mono<T> mapQueryParamToInstance(ServerRequest serverRequest, Class<T> clazz) {
