@@ -1,5 +1,6 @@
 package com.kensuuu.demo;
 
+import com.kensuuu.demo.todo.TodoHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -10,8 +11,9 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 public class DemoRouter {
 
     @Bean
-    public RouterFunction<ServerResponse> route() {
+    public RouterFunction<ServerResponse> route(TodoHandler todoHandler) {
         return RouterFunctions.route()
+                .add(todoHandler.routes())
                 .build();
     }
 }
