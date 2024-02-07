@@ -8,5 +8,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class GetTodoRequest {
-    private String id;
+    private Long id;
 }
