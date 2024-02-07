@@ -29,33 +29,37 @@ public class Handlers {
     }
 
     public static <T, R extends Mono<ServerResponse>> Mono<ServerResponse> handleQueryParam(ServerRequest serverRequest, Class<T> clazz, Function<T, R> function) {
-        return Mono.fromCallable(() -> {
-                    T instance = clazz.getDeclaredConstructor().newInstance();
-                    PropertyDescriptor[] propertyDescriptors = org.springframework.beans.BeanUtils.getPropertyDescriptors(clazz);
-
-                    for (PropertyDescriptor propertyDescriptor : propertyDescriptors) {
-                        Method writeMethod = propertyDescriptor.getWriteMethod();
-                        if (writeMethod != null) {
-                            Class<?> propertyType = propertyDescriptor.getPropertyType();
-                            String propertyName = propertyDescriptor.getName();
-                            serverRequest.queryParam(propertyName).ifPresent(value -> {
-                                if (conversionService.canConvert(String.class, propertyType)) {
-                                    Object convertedValue = conversionService.convert(value, propertyType);
-                                    try {
-                                        writeMethod.invoke(instance, convertedValue);
-                                    } catch (Exception e) {
-                                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid request parameter " + propertyName + " with value " + value, e);
-                                    }
-                                }
-                            });
-                        }
-                    }
-                    return instance;
-                })
+        return mapQueryParamToInstance(serverRequest, clazz)
                 .flatMap(function)
                 .switchIfEmpty(ServerResponse.notFound().build())
                 .onErrorResume(WebExchangeBindException.class, e -> ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON).bodyValue(e.getBody()))
                 .onErrorResume(e -> ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build())
                 .flatMap(response -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(response));
+    }
+
+    private static <T> Mono<T> mapQueryParamToInstance(ServerRequest serverRequest, Class<T> clazz) {
+        return Mono.fromCallable(() -> {
+            T instance = clazz.getDeclaredConstructor().newInstance();
+            PropertyDescriptor[] propertyDescriptors = org.springframework.beans.BeanUtils.getPropertyDescriptors(clazz);
+
+            for (PropertyDescriptor propertyDescriptor : propertyDescriptors) {
+                Method writeMethod = propertyDescriptor.getWriteMethod();
+                if (writeMethod != null) {
+                    Class<?> propertyType = propertyDescriptor.getPropertyType();
+                    String propertyName = propertyDescriptor.getName();
+                    serverRequest.queryParam(propertyName).ifPresent(value -> {
+                        if (conversionService.canConvert(String.class, propertyType)) {
+                            Object convertedValue = conversionService.convert(value, propertyType);
+                            try {
+                                writeMethod.invoke(instance, convertedValue);
+                            } catch (Exception e) {
+                                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid request parameter " + propertyName + " with value " + value, e);
+                            }
+                        }
+                    });
+                }
+            }
+            return instance;
+        });
     }
 }
