@@ -9,8 +9,6 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
-import static com.kensuuu.demo.Handlers.handleQueryParam;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -20,14 +18,14 @@ public class TodoHandler {
 
     public RouterFunction<ServerResponse> routes() {
         return RouterFunctions.route()
-                .GET("/todo", this::get)
+                .GET("/todo/{id}", this::get)
                 .build();
     }
 
     public Mono<ServerResponse> get(ServerRequest serverRequest) {
-        return handleQueryParam(serverRequest, GetTodoRequest.class, request -> {
-            log.info(request.toString());
-            return ServerResponse.ok().body(todoRepository.findById(request.getId()), Todo.class);
-        });
+        var id = Long.parseLong(serverRequest.pathVariable("id"));
+        return todoRepository.findById(id)
+                .flatMap(todo -> ServerResponse.ok().bodyValue(todo))
+                .switchIfEmpty(ServerResponse.notFound().build());
     }
 }
